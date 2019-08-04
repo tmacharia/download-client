@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>Download Client</PackageId>
+    <PackageId>Download.Client</PackageId>
     <Authors>Timothy Macharia</Authors>
     <Company>Neon Clouds</Company>
     <Description>.NET lightweight library for download operations offering download statistics/metrics and events while downloading.</Description>
