@@ -29,6 +29,14 @@ namespace Neon.Downloader
         /// <returns>
         ///     A byte array of the contents read from the specified <paramref name="uri"/>
         /// </returns>
+        byte[] Download(Uri uri);
+        /// <summary>
+        /// Returns all the bytes read from a HTTP resource.
+        /// </summary>
+        /// <param name="uri">Path to the resource to download.</param>
+        /// <returns>
+        ///     A byte array of the contents read from the specified <paramref name="uri"/>
+        /// </returns>
         byte[] Download(Uri uri, CancellationToken cancellationToken);
         /// <summary>
         /// Returns all the bytes read from a HTTP resource.
@@ -37,7 +45,24 @@ namespace Neon.Downloader
         /// <returns>
         ///     A byte array of the contents read from the specified <paramref name="uri"/>
         /// </returns>
+        byte[] Download(string url);
+        /// <summary>
+        /// Returns all the bytes read from a HTTP resource.
+        /// </summary>
+        /// <param name="url">Path to the resource to download.</param>
+        /// <returns>
+        ///     A byte array of the contents read from the specified <paramref name="uri"/>
+        /// </returns>
         byte[] Download(string url, CancellationToken cancellationToken);
+        /// <summary>
+        /// Asynchronously reads and returns all the bytes read from a HTTP resource.
+        /// </summary>
+        /// <param name="uri">Path to the resource to download.</param>
+        /// <returns>
+        ///     An awaitable <see cref="Task"/> that finally returns the resource's content
+        ///     as a byte array once the <see cref="Task"/> completes.
+        /// </returns>
+        Task<byte[]> DownloadAsync(Uri uri);
         /// <summary>
         /// Asynchronously reads and returns all the bytes read from a HTTP resource.
         /// </summary>
@@ -55,9 +80,26 @@ namespace Neon.Downloader
         ///     An awaitable <see cref="Task"/> that finally returns the resource's content
         ///     as a byte array once the <see cref="Task"/> completes.
         /// </returns>
+        Task<byte[]> DownloadAsync(string url);
+        /// <summary>
+        /// Asynchronously reads and returns all the bytes read from a HTTP resource.
+        /// </summary>
+        /// <param name="url">Path to the resource to download.</param>
+        /// <returns>
+        ///     An awaitable <see cref="Task"/> that finally returns the resource's content
+        ///     as a byte array once the <see cref="Task"/> completes.
+        /// </returns>
         Task<byte[]> DownloadAsync(string url, CancellationToken cancellationToken);
 
-
+        /// <summary>
+        /// Asynchronously downloads the contents of a remote resource/file and saves it 
+        /// to a Local file in the Local ApplicationData Folder with the name
+        /// of the file found in the <paramref name="url"/>.
+        /// 
+        /// </summary>
+        /// <param name="url">Path to the resource to download.</param>
+        /// <param name="folderPath">Path to folder where to save the file.</param>
+        void DownloadToFile(string url, string folderPath = null);
         /// <summary>
         /// Asynchronously downloads the contents of a remote resource/file and saves it 
         /// to a Local file in the Local ApplicationData Folder with the name
@@ -78,6 +120,18 @@ namespace Neon.Downloader
         ///     Name to use in saving the file or basically a path of where to save the file.
         /// </param>
         /// <param name="folderPath">Path to folder where to save the file.</param>
+        void DownloadToFile(string url, string filename, string folderPath = null);
+        /// <summary>
+        /// Asynchronously downloads the contents of a remote resource/file and saves it
+        /// to a Local file in the Local ApplicationData Folder using the 
+        /// <paramref name="filename"/> specified.
+        /// 
+        /// </summary>
+        /// <param name="url">Path to the resource to download.</param>
+        /// <param name="filename">
+        ///     Name to use in saving the file or basically a path of where to save the file.
+        /// </param>
+        /// <param name="folderPath">Path to folder where to save the file.</param>
         void DownloadToFile(string url, string filename, CancellationToken cancellationToken, string folderPath=null);
         /// <summary>
         /// Asynchronously downloads the contents of a remote resource/file and saves it 
@@ -87,7 +141,28 @@ namespace Neon.Downloader
         /// </summary>
         /// <param name="url">Path to the resource to download.</param>
         /// <param name="folderPath">Path to folder where to save the file.</param>
+        void DownloadToFile(Uri uri, string folderPath = null);
+        /// <summary>
+        /// Asynchronously downloads the contents of a remote resource/file and saves it 
+        /// to a Local file in the Local ApplicationData Folder with the name
+        /// of the file found in the <paramref name="uri"/>.
+        /// 
+        /// </summary>
+        /// <param name="url">Path to the resource to download.</param>
+        /// <param name="folderPath">Path to folder where to save the file.</param>
         void DownloadToFile(Uri uri, CancellationToken cancellationToken, string folderPath=null);
+        /// <summary>
+        /// Asynchronously downloads the contents of a remote resource/file and saves it
+        /// to a Local file in the Local ApplicationData Folder using the 
+        /// <paramref name="filename"/> specified.
+        /// 
+        /// </summary>
+        /// <param name="uri">Path to the resource to download.</param>
+        /// <param name="filename">
+        ///     Name to use in saving the file or basically a path of where to save the file.
+        /// </param>
+        /// <param name="folderPath">Path to folder where to save the file.</param>
+        void DownloadToFile(Uri uri, string filename, string folderPath = null);
         /// <summary>
         /// Asynchronously downloads the contents of a remote resource/file and saves it
         /// to a Local file in the Local ApplicationData Folder using the 
