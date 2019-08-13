@@ -16,6 +16,7 @@ namespace Neon.Downloader
         private readonly DownloaderSettings _settings;
         private readonly HttpClient _client;
         private readonly long _maxDowloadSize;
+        private readonly CancellationToken nullToken = CancellationToken.None;
         /// <summary>
         /// Instanciates download client with a max download size;
         /// </summary>
@@ -35,39 +36,68 @@ namespace Neon.Downloader
         public event DownloadCompletedEventHandler DownloadCompleted;
         public event DownloadErrorEventHandler OnError;
 
+        public byte[] Download(Uri uri)
+        {
+            return InternalDownloadAsync(uri, nullToken).Result;
+        }
+        public byte[] Download(string url)
+        {
+            return InternalDownloadAsync(new Uri(url), nullToken).Result;
+        }
+        public Task<byte[]> DownloadAsync(Uri uri)
+        {
+            return InternalDownloadAsync(uri, nullToken);
+        }
+        public Task<byte[]> DownloadAsync(string url)
+        {
+            return InternalDownloadAsync(new Uri(url), nullToken);
+        }
+
         public byte[] Download(Uri uri, CancellationToken cancellationToken)
         {
             return InternalDownloadAsync(uri, cancellationToken).Result;
         }
-
         public byte[] Download(string url, CancellationToken cancellationToken)
         {
             return InternalDownloadAsync(new Uri(url), cancellationToken).Result;
         }
-
         public Task<byte[]> DownloadAsync(Uri uri, CancellationToken cancellationToken)
         {
             return InternalDownloadAsync(uri, cancellationToken);
         }
-
         public Task<byte[]> DownloadAsync(string url, CancellationToken cancellationToken)
         {
             return InternalDownloadAsync(new Uri(url), cancellationToken);
         }
+
+        public async void DownloadToFile(string url, string folderPath = null)
+        {
+            _ = await InternalDownloadAsync(new Uri(url), nullToken, true, null, folderPath);
+        }
+        public async void DownloadToFile(string url, string filename, string folderPath = null)
+        {
+            _ = await InternalDownloadAsync(new Uri(url), nullToken, true, filename, folderPath);
+        }
+        public async void DownloadToFile(Uri uri, string folderPath = null)
+        {
+            _ = await InternalDownloadAsync(uri, nullToken, true, null, folderPath);
+        }
+        public async void DownloadToFile(Uri uri, string filename, string folderPath = null)
+        {
+            _ = await InternalDownloadAsync(uri, nullToken, true, filename, folderPath);
+        }
+
         public async void DownloadToFile(string url, CancellationToken cancellationToken, string folderPath=null)
         {
             _ = await InternalDownloadAsync(new Uri(url), cancellationToken, true, null, folderPath);
         }
-
         public async void DownloadToFile(string url, string filename, CancellationToken cancellationToken, string folderPath = null) {
             _ = await InternalDownloadAsync(new Uri(url), cancellationToken, true, filename, folderPath);
         }
-
         public async void DownloadToFile(Uri uri, CancellationToken cancellationToken, string folderPath = null)
         {
             _ = await InternalDownloadAsync(uri, cancellationToken, true, null, folderPath);
         }
-
         public async void DownloadToFile(Uri uri, string filename, CancellationToken cancellationToken, string folderPath = null)
         {
             _ = await InternalDownloadAsync(uri, cancellationToken, true, filename, folderPath);
