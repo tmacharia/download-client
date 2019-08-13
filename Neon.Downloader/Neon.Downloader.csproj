@@ -14,12 +14,12 @@
     <RepositoryUrl>https://github.com/tmacharia/download-client.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>download</PackageTags>
-    <PackageVersion>1.0.0</PackageVersion>
+    <PackageVersion>1.0.1</PackageVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Shared.Common" Version="1.1.6" />
+    <PackageReference Include="Shared.Common" Version="1.1.8" />
   </ItemGroup>
 
   <ItemGroup>
