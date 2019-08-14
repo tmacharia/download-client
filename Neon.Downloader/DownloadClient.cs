@@ -216,11 +216,12 @@ namespace Neon.Downloader
             }
             stopwatch.Stop();
             stopwatch.Reset();
-            DownloadCompleted(metric);
             
             if(destinationStream is MemoryStream) {
+                DownloadCompleted(metric, destinationStream);
                 return ((MemoryStream)destinationStream).ToArray();
-            }else {
+            }
+            else {
                 destinationStream.Flush();
                 destinationStream.Close();
                 destinationStream.Dispose();
