@@ -120,7 +120,7 @@ namespace Neon.Downloader
         ///     Name to use in saving the file or basically a path of where to save the file.
         /// </param>
         /// <param name="folderPath">Path to folder where to save the file.</param>
-        void DownloadToFile(string url, string filename, string folderPath = null);
+        Task DownloadToFileAsync(string url, string filename, string folderPath = null);
         /// <summary>
         /// Asynchronously downloads the contents of a remote resource/file and saves it
         /// to a Local file in the Local ApplicationData Folder using the 

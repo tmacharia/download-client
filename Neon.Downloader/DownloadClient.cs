@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Common;
@@ -74,7 +75,7 @@ namespace Neon.Downloader
         {
             _ = await InternalDownloadAsync(new Uri(url), nullToken, true, null, folderPath);
         }
-        public async void DownloadToFile(string url, string filename, string folderPath = null)
+        public async Task DownloadToFileAsync(string url, string filename, string folderPath = null)
         {
             _ = await InternalDownloadAsync(new Uri(url), nullToken, true, filename, folderPath);
         }
@@ -114,9 +115,13 @@ namespace Neon.Downloader
                 if (httpResponse.IsSuccessStatusCode)
                 {
                     long? length = httpResponse.Content.Headers.ContentLength;
-                    length = length.HasValue ? length 
-                        : length.Value < _maxDowloadSize ? length
-                        : _maxDowloadSize;
+                    if (length == null)
+                        length = _maxDowloadSize;
+                    else
+                    {
+                        if (length.Value > _maxDowloadSize)
+                            length = _maxDowloadSize;
+                    }
                     /*__________________________________________________________________________________
                       |                                                                                |
                       |  .NET runtime has a 2GB size limit for objects.                                |
@@ -234,19 +239,24 @@ namespace Neon.Downloader
                  * the uri.
                  * 
                  ***************************************/
-                string uri_ext = uri.OriginalString.Split('.').Last();
+                string uri_ext = uri.OriginalString.Split('/').Last().Split('.').Last();
                 string file_ext = filename.Split('.').Last();
 
-                if (!file_ext.Equals(uri_ext))
-                    filename = filename.Replace(file_ext, uri_ext);
-
-                if(new Uri(filename).IsAbsoluteUri)
+                if (!uri_ext.IsValid())
                 {
-                    path = Path.Combine(folder, filename);
+                    if (!file_ext.IsValid())
+                        throw new ArgumentException("No file extension specified.");
+                    else
+                        path = Path.Combine(folder, filename);
                 }
                 else
                 {
-                    path = filename;
+                    if (!file_ext.Equals(uri_ext))
+                        filename = filename.Replace(file_ext, uri_ext);
+                    if (new Uri(filename).IsAbsoluteUri)
+                        path = Path.Combine(folder, filename);
+                    else
+                        path = filename;
                 }
             }
             else
