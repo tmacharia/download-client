@@ -14,7 +14,6 @@ namespace Neon.Downloader
 {
     public class DownloaderClient : IDownloader
     {
-        private readonly DownloaderSettings _settings;
         private readonly HttpClient _client;
         private readonly long _maxDowloadSize;
         private readonly CancellationToken nullToken = CancellationToken.None;
@@ -29,13 +28,13 @@ namespace Neon.Downloader
             var httpClientHandler = new HttpClientHandler {
                 ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; }
             };
-            _settings = new DownloaderSettings();
             _client = new HttpClient(httpClientHandler);
         }
 
         public event DownloadEventHandler OnDownloading;
-        public event DownloadCompletedEventHandler DownloadCompleted;
+        public event DownloadEventHandler OnDownloadStart;
         public event DownloadErrorEventHandler OnError;
+        public event DownloadCompletedEventHandler DownloadCompleted;
 
         public byte[] Download(Uri uri)
         {
@@ -144,7 +143,7 @@ namespace Neon.Downloader
                 else
                 {
                     string message = await httpResponse.Content.ReadAsStringAsync();
-                    OnError(new DownloadClientException("An error occured. Http request responded with a non 200-OK StatusCode.",
+                    OnError(new DownloadClientException("Non 200-OK StatusCode Received. See inner exception for details",
                         new HttpRequestException(message)));
                 }
             }
@@ -155,8 +154,7 @@ namespace Neon.Downloader
             }
             catch (Exception ex)
             {
-                OnError?.Invoke(new DownloadClientException("Download operation failed & threw an exception. " +
-                    "See inner exception for further details.", ex));
+                OnError?.Invoke(new DownloadClientException("Download failed. See inner exception for details ", ex));
             }
             return vs;
         }
@@ -172,7 +170,7 @@ namespace Neon.Downloader
                     DownloadMetric metric = new DownloadMetric(length);
                     Stopwatch stopwatch = new Stopwatch();
                     stopwatch.Start();
-
+                    OnDownloadStart?.Invoke(metric);
                     if (!saveToFile)
                         return FromReaderToStream(sr, new MemoryStream((int)length), ref metric, ref stopwatch, ref length, ct);
                     else
@@ -189,10 +187,13 @@ namespace Neon.Downloader
         internal byte[] FromReaderToStream(StreamReader sr, Stream destinationStream,
             ref DownloadMetric metric, ref Stopwatch stopwatch, ref long? length, CancellationToken ct)
         {
-            var buffer = new byte[1024];
+            int kb = 1024;
+            int toDownload = kb;
+            var buffer = new byte[toDownload];
             int bytesRead;
-            while ((bytesRead = sr.BaseStream.Read(buffer, 0, buffer.Length)) > 0 && !metric.IsComplete)
-            {
+
+            while ((bytesRead = sr.BaseStream.Read(buffer, 0, buffer.Length)) > 0){
+                //bytesRead = sr.BaseStream.Read(buffer, 0, buffer.Length);
                 // Poll on this property if you have to do
                 // other cleanup before throwing.
                 if (ct.IsCancellationRequested)
@@ -200,7 +201,7 @@ namespace Neon.Downloader
                     // Clean up here, then...
                     destinationStream.SetLength(0);
                     destinationStream.Close();
-                    if(destinationStream is FileStream)
+                    if (destinationStream is FileStream)
                     {
                         var fs = destinationStream as FileStream;
                         if (File.Exists(fs.Name))
@@ -212,13 +213,21 @@ namespace Neon.Downloader
                 destinationStream.Write(buffer, 0, bytesRead);
                 metric.DownloadedBytes += bytesRead;
                 metric.ElapsedTime = stopwatch.Elapsed;
-                OnDownloading(metric);
+                OnDownloading?.Invoke(metric);
+
+                length -= toDownload;
+                //if (length > kb)
+                //    toDownload = kb;
+                //else
+                //    toDownload = kb - (int)length;
+                toDownload = length >= kb ? kb : (int)length;
+                buffer = new byte[toDownload];
             }
             stopwatch.Stop();
             stopwatch.Reset();
             
             if(destinationStream is MemoryStream) {
-                DownloadCompleted(metric, destinationStream);
+                //DownloadCompleted?.Invoke(metric, destinationStream);
                 return ((MemoryStream)destinationStream).ToArray();
             }
             else {
@@ -232,7 +241,7 @@ namespace Neon.Downloader
         internal string ToRelativeFilePath(Uri uri, string filename = null, string folderPath = null)
         {
             string path;
-            string folder = folderPath.IsValid() ? folderPath : _settings.DefaultDownloadFolder;
+            string folder = folderPath.IsValid() ? folderPath : Globals.DownloadFolder;
             if (filename.IsValid())
             {
                 /* First, check if file extensions match. If they don't, replace
