@@ -10,7 +10,6 @@ namespace Neon.Downloader.Console
             System.Console.WriteLine("Hello World!");
             _downloader = new DownloaderClient(250000);
             _downloader.OnDownloading += _downloader_OnDownloading;
-            _downloader.DownloadCompleted += _downloader_DownloadCompleted;
             _downloader.OnError += _downloader_OnError;
 
             Start("http://91.121.165.88:8116/stream/1/");

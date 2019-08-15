@@ -9,6 +9,11 @@ namespace Neon.Downloader
     {
         /// <summary>
         /// Event handler or function/method to call passing along a <see cref="DownloadMetric"/>
+        /// for when a download starts.
+        /// </summary>
+        event DownloadEventHandler OnDownloadStart;
+        /// <summary>
+        /// Event handler or function/method to call passing along a <see cref="DownloadMetric"/>
         /// for every time progress occurs during a download operation.
         /// </summary>
         event DownloadEventHandler OnDownloading;
