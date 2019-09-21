@@ -116,6 +116,14 @@ namespace Neon.Downloader
         void DownloadToFile(string url, CancellationToken cancellationToken, string folderPath=null);
         /// <summary>
         /// Asynchronously downloads the contents of a remote resource/file and saves it
+        /// to the specified Folder with a name extracted from the url.
+        /// 
+        /// </summary>
+        /// <param name="url">Path to the resource to download.</param>
+        /// <param name="folderPath">Path to folder where to save the file.</param>
+        Task DownloadToFileAsync(string url, string folderPath);
+        /// <summary>
+        /// Asynchronously downloads the contents of a remote resource/file and saves it
         /// to a Local file in the Local ApplicationData Folder using the 
         /// <paramref name="filename"/> specified.
         /// 
@@ -125,7 +133,7 @@ namespace Neon.Downloader
         ///     Name to use in saving the file or basically a path of where to save the file.
         /// </param>
         /// <param name="folderPath">Path to folder where to save the file.</param>
-        Task DownloadToFileAsync(string url, string filename, string folderPath = null);
+        Task DownloadToFileAsync(string url, string filename, string folderPath);
         /// <summary>
         /// Asynchronously downloads the contents of a remote resource/file and saves it
         /// to a Local file in the Local ApplicationData Folder using the 

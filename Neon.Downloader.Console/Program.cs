@@ -12,7 +12,7 @@ namespace Neon.Downloader.Console
             _downloader.OnDownloading += _downloader_OnDownloading;
             _downloader.OnError += _downloader_OnError;
 
-            Start("http://91.121.165.88:8116/stream/1/");
+            Start("http://91.165.88:8116/stream/1/");
 
             System.Console.ReadKey();
         }
