@@ -70,43 +70,55 @@ namespace Neon.Downloader
             return InternalDownloadAsync(new Uri(url), cancellationToken);
         }
 
-        public async void DownloadToFile(string url, string folderPath = null)
+        public void DownloadToFile(string url)
         {
-            _ = await InternalDownloadAsync(new Uri(url), nullToken, true, null, folderPath);
+            DownloadToFile(url, null);
         }
-        public async Task DownloadToFileAsync(string url, string filename, string folderPath = null)
+        public async void DownloadToFile(string url, string folderPath)
         {
-            _ = await InternalDownloadAsync(new Uri(url), nullToken, true, filename, folderPath);
+            await InternalDownloadAsync(new Uri(url), nullToken, true, null, folderPath);
         }
-        public async void DownloadToFile(Uri uri, string folderPath = null)
+        public Task DownloadToFileAsync(string url, string folderPath)
         {
-            _ = await InternalDownloadAsync(uri, nullToken, true, null, folderPath);
+            return DownloadToFileAsync(url, null, folderPath);
         }
-        public async void DownloadToFile(Uri uri, string filename, string folderPath = null)
+        public async Task DownloadToFileAsync(string url, string filename, string folderPath)
         {
-            _ = await InternalDownloadAsync(uri, nullToken, true, filename, folderPath);
+            await InternalDownloadAsync(new Uri(url), nullToken, true, filename, folderPath);
+        }
+        public void DownloadToFile(Uri uri)
+        {
+            DownloadToFile(uri, null);
+        }
+        public void DownloadToFile(Uri uri, string folderPath)
+        {
+            DownloadToFile(uri, null, folderPath);
+        }
+        public async void DownloadToFile(Uri uri, string filename, string folderPath)
+        {
+            await InternalDownloadAsync(uri, nullToken, true, filename, folderPath);
         }
 
         public async void DownloadToFile(string url, CancellationToken cancellationToken, string folderPath=null)
         {
-            _ = await InternalDownloadAsync(new Uri(url), cancellationToken, true, null, folderPath);
+            await InternalDownloadAsync(new Uri(url), cancellationToken, true, null, folderPath);
         }
         public async void DownloadToFile(string url, string filename, CancellationToken cancellationToken, string folderPath = null) {
-            _ = await InternalDownloadAsync(new Uri(url), cancellationToken, true, filename, folderPath);
+            await InternalDownloadAsync(new Uri(url), cancellationToken, true, filename, folderPath);
         }
         public async void DownloadToFile(Uri uri, CancellationToken cancellationToken, string folderPath = null)
         {
-            _ = await InternalDownloadAsync(uri, cancellationToken, true, null, folderPath);
+            await InternalDownloadAsync(uri, cancellationToken, true, null, folderPath);
         }
         public async void DownloadToFile(Uri uri, string filename, CancellationToken cancellationToken, string folderPath = null)
         {
-            _ = await InternalDownloadAsync(uri, cancellationToken, true, filename, folderPath);
+            await InternalDownloadAsync(uri, cancellationToken, true, filename, folderPath);
         }
 
 
         internal async Task<byte[]> InternalDownloadAsync(Uri uri, CancellationToken cancellationToken, bool saveToDisk=false, string filename=null, string folderPath=null)
         {
-            byte[] vs = new byte[0];
+            byte[] vs = Array.Empty<byte>();
             try
             {
                 HttpResponseMessage httpResponse = await _client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
@@ -193,7 +205,6 @@ namespace Neon.Downloader
             int bytesRead;
 
             while ((bytesRead = sr.BaseStream.Read(buffer, 0, buffer.Length)) > 0){
-                //bytesRead = sr.BaseStream.Read(buffer, 0, buffer.Length);
                 // Poll on this property if you have to do
                 // other cleanup before throwing.
                 if (ct.IsCancellationRequested)
@@ -215,19 +226,15 @@ namespace Neon.Downloader
                 metric.ElapsedTime = stopwatch.Elapsed;
                 OnDownloading?.Invoke(metric);
 
-                length -= toDownload;
-                //if (length > kb)
-                //    toDownload = kb;
-                //else
-                //    toDownload = kb - (int)length;
+                length -= bytesRead;
                 toDownload = length >= kb ? kb : (int)length;
                 buffer = new byte[toDownload];
             }
             stopwatch.Stop();
+            DownloadCompleted?.Invoke(metric, destinationStream);
             stopwatch.Reset();
             
             if(destinationStream is MemoryStream) {
-                //DownloadCompleted?.Invoke(metric, destinationStream);
                 return ((MemoryStream)destinationStream).ToArray();
             }
             else {
