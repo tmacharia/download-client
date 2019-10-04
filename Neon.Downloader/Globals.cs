@@ -10,6 +10,7 @@ namespace Neon.Downloader
     {
         public const int MaxThreads = 4;
         public const int MaxParallelDownloads = 4;
+        public const int PageSize = 1024 * 200;
         public static string RootFolder = GetFolderPath(SpecialFolder.LocalApplicationData);
         public static string DownloadFolder = $"{RootFolder}{Path.DirectorySeparatorChar}Downloads";
         public static string AppFolder = $"{RootFolder}";

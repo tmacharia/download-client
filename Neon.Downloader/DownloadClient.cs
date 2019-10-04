@@ -18,17 +18,25 @@ namespace Neon.Downloader
         private readonly long _maxDowloadSize;
         private readonly CancellationToken nullToken = CancellationToken.None;
         /// <summary>
-        /// Instanciates download client with a max download size;
+        /// Instanciates download client with a max download size of 1GB.
         /// </summary>
-        /// <param name="maxDownloadSizeInBytes">Maximum download limit in bytes. Default is 10 MB.</param>
-        public DownloaderClient(long maxDownloadSizeInBytes=10000000)
+        public DownloaderClient()
         {
-            _maxDowloadSize = maxDownloadSizeInBytes;
+            _maxDowloadSize = 1000000 * 1000;
             //Ignore bad certificate in .NET core 2.0
-            var httpClientHandler = new HttpClientHandler {
+            var httpClientHandler = new HttpClientHandler
+            {
                 ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; }
             };
             _client = new HttpClient(httpClientHandler);
+        }
+        /// <summary>
+        /// Instanciates download client with a max download size;
+        /// </summary>
+        /// <param name="maxDownloadSizeInBytes">Maximum download limit in bytes. Default is 500 MB.</param>
+        public DownloaderClient(long maxDownloadSizeInBytes=1000000*500) :this()
+        {
+            _maxDowloadSize = maxDownloadSizeInBytes;
         }
 
         public event DownloadEventHandler OnDownloading;
@@ -199,7 +207,7 @@ namespace Neon.Downloader
         internal byte[] FromReaderToStream(StreamReader sr, Stream destinationStream,
             ref DownloadMetric metric, ref Stopwatch stopwatch, ref long? length, CancellationToken ct)
         {
-            int kb = 1024;
+            int kb = metric.Speed > Globals.PageSize ? (int)metric.Speed : Globals.PageSize;
             int toDownload = kb;
             var buffer = new byte[toDownload];
             int bytesRead;
@@ -256,37 +264,46 @@ namespace Neon.Downloader
                  * the uri.
                  * 
                  ***************************************/
-                string uri_ext = uri.OriginalString.Split('/').Last().Split('.').Last();
-                string file_ext = filename.Split('.').Last();
-
-                if (!uri_ext.IsValid())
+                if (!filename.Contains('.'))
                 {
-                    if (!file_ext.IsValid())
-                        throw new ArgumentException("No file extension specified.");
+                    string uri_ext = uri.OriginalString.Split('/').Last().Split('.').Last();
+                    string file_ext = filename.Split('.').Last();
+
+                    if (!uri_ext.IsValid())
+                    {
+                        if (!file_ext.IsValid())
+                            throw new ArgumentException("No file extension specified.");
+                        else
+                            path = folder.IsValid() ? Path.Combine(folder, filename) : filename;
+                    }
                     else
-                        path = Path.Combine(folder, filename);
+                    {
+                        if (!file_ext.Equals(uri_ext))
+                            filename = filename.Replace(file_ext, uri_ext);
+                        if (new Uri(filename).IsAbsoluteUri)
+                            path = folder.IsValid() ? Path.Combine(folder, filename) : filename;
+                        else
+                            path = filename;
+                    }
                 }
                 else
                 {
-                    if (!file_ext.Equals(uri_ext))
-                        filename = filename.Replace(file_ext, uri_ext);
-                    if (new Uri(filename).IsAbsoluteUri)
-                        path = Path.Combine(folder, filename);
-                    else
-                        path = filename;
+                    path = folder.IsValid() ? Path.Combine(folder, filename) : filename;
                 }
             }
             else
             {
-                path = Path.Combine(folder, GetFileNameFrom(uri));
+                path = folder.IsValid() ? Path.Combine(folder, filename) : filename;
             }
 
             /* Creates all directories and sub-directories in the specified path
              * unless they already exist.
              * 
              *****************************************/
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
+            if (folder.IsValid()) {
+                if (!Directory.Exists(folder))
+                    Directory.CreateDirectory(folder);
+            }
 
             return path;
         }
