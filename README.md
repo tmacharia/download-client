@@ -13,12 +13,12 @@ Install package from Nuget by running the following command.
 **Package Manager Console**
 
 ```bash
-Install-Package Download.Client -Version 1.0.1
+Install-Package Download.Client
 ```
 **.NET CLI**
 
 ```bash
-dotnet add package Download.Client --version 1.0.1
+dotnet add package Download.Client
 ```
 
 Then go ahead import the library in your target class.
