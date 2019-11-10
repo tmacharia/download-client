@@ -14,8 +14,9 @@
     <RepositoryUrl>https://github.com/tmacharia/download-client.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>download</PackageTags>
-    <PackageVersion>1.0.5</PackageVersion>
+    <PackageVersion>1.0.6-beta</PackageVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <Platforms>AnyCPU;x86;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

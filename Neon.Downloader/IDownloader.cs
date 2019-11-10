@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Neon.Downloader.Enums;
@@ -133,7 +134,8 @@ namespace Neon.Downloader
         ///     Name to use in saving the file or basically a path of where to save the file.
         /// </param>
         /// <param name="folderPath">Path to folder where to save the file.</param>
-        Task DownloadToFileAsync(string url, string filename, string folderPath);
+        Task<byte[]> DownloadToFileAsync(string url, string folder, string filename, CancellationToken ct);
+        Task<byte[]> DownloadToFileAsync(string url, Stream output, CancellationToken ct);
         /// <summary>
         /// Asynchronously downloads the contents of a remote resource/file and saves it
         /// to a Local file in the Local ApplicationData Folder using the 
