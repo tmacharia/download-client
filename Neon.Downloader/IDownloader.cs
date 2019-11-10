@@ -27,6 +27,10 @@ namespace Neon.Downloader
         /// operation. This event passes along an <see cref="DownloadClientException"/>
         /// </summary>
         event DownloadErrorEventHandler OnError;
+        /// <summary>
+        /// Event handler to call everytime a download related message is logged/encountered.
+        /// </summary>
+        event DownloadTraceEventHandler DownloadTrace;
 
         /// <summary>
         /// Returns all the bytes read from a HTTP resource.
