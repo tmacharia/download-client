@@ -23,7 +23,7 @@ namespace Neon.Downloader
         {
             TimeInSeconds = timeInSeconds;
             DownloadedBytes = 0;
-            TotalBytes = totalBytes.HasValue ? totalBytes.Value : int.MaxValue;
+            TotalBytes = totalBytes ?? int.MaxValue;
             ElapsedTime = new TimeSpan();
         }
         /// <summary>
@@ -125,6 +125,10 @@ namespace Neon.Downloader
                 catch (DivideByZeroException)
                 {
                     return TimeSpan.FromSeconds(0);
+                }
+                catch (Exception)
+                {
+                    return new TimeSpan();
                 }
             }
         }

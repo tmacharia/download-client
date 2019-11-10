@@ -29,6 +29,7 @@ namespace Neon.Downloader
         }
     }
 
+    public delegate void DownloadTraceEventHandler(string message);
     public delegate void DownloadEventHandler(DownloadMetric metric);
     public delegate void DownloadCompletedEventHandler(DownloadMetric metric, Stream stream);
     public delegate void DownloadErrorEventHandler(Exception ex);

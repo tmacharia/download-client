@@ -1,12 +1,16 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Common;
+using Common.Primitives;
 using Neon.Downloader.Enums;
 using Neon.Downloader.Exceptions;
 
@@ -14,15 +18,16 @@ namespace Neon.Downloader
 {
     public class DownloaderClient : IDownloader
     {
+        private const long MaxSize = 1000000 * 1000;
         private readonly HttpClient _client;
         private readonly long _maxDowloadSize;
-        private readonly CancellationToken nullToken = CancellationToken.None;
+        private CancellationToken nullToken => CancellationToken.None;
         /// <summary>
         /// Instanciates download client with a max download size of 1GB.
         /// </summary>
         public DownloaderClient()
         {
-            _maxDowloadSize = 1000000 * 1000;
+            _maxDowloadSize = MaxSize;
             //Ignore bad certificate in .NET core 2.0
             var httpClientHandler = new HttpClientHandler
             {
@@ -34,7 +39,7 @@ namespace Neon.Downloader
         /// Instanciates download client with a max download size;
         /// </summary>
         /// <param name="maxDownloadSizeInBytes">Maximum download limit in bytes. Default is 500 MB.</param>
-        public DownloaderClient(long maxDownloadSizeInBytes=1000000*500) :this()
+        public DownloaderClient(long maxDownloadSizeInBytes=MaxSize) :this()
         {
             _maxDowloadSize = maxDownloadSizeInBytes;
         }
@@ -43,6 +48,7 @@ namespace Neon.Downloader
         public event DownloadEventHandler OnDownloadStart;
         public event DownloadErrorEventHandler OnError;
         public event DownloadCompletedEventHandler DownloadCompleted;
+        public event DownloadTraceEventHandler DownloadTrace;
 
         public byte[] Download(Uri uri)
         {
@@ -88,12 +94,13 @@ namespace Neon.Downloader
         }
         public Task DownloadToFileAsync(string url, string folderPath)
         {
-            return DownloadToFileAsync(url, null, folderPath);
+            return InternalDownloadAsync(new Uri(url), nullToken, true, null, folderPath);
         }
-        public async Task DownloadToFileAsync(string url, string filename, string folderPath)
+        public Task<byte[]> DownloadToFileAsync(string url, string folder, string filename, CancellationToken ct)
         {
-            await InternalDownloadAsync(new Uri(url), nullToken, true, filename, folderPath);
+            return ProcessDownloadAsync(new Uri(url), folder, filename, ct);
         }
+        public Task<byte[]> DownloadToFileAsync(string url, Stream output, CancellationToken ct) => ProcessDownloadAsync(new Uri(url), output,ct);
         public void DownloadToFile(Uri uri)
         {
             DownloadToFile(uri, null);
@@ -123,7 +130,7 @@ namespace Neon.Downloader
             await InternalDownloadAsync(uri, cancellationToken, true, filename, folderPath);
         }
 
-
+        [Obsolete("Issues encountered working with this method. Please migrate to using 'ProcessDownloadAsync' method which is much efficient & resilient to runtime errors/issues.",false)]
         internal async Task<byte[]> InternalDownloadAsync(Uri uri, CancellationToken cancellationToken, bool saveToDisk=false, string filename=null, string folderPath=null)
         {
             byte[] vs = Array.Empty<byte>();
@@ -178,6 +185,90 @@ namespace Neon.Downloader
             }
             return vs;
         }
+        internal Task<byte[]> ProcessDownloadAsync(Uri uri, string folder, string filename, CancellationToken ct)
+        {
+            return ProcessDownloadAsync(uri, File.Open(Path.Combine(folder, filename), FileMode.OpenOrCreate, FileAccess.Write), ct);
+        }
+        internal async Task<byte[]> ProcessDownloadAsync(Uri uri, Stream output, CancellationToken ct)
+        {
+            byte[] vs = Array.Empty<byte>();
+            try
+            {
+
+                #region Get file size  
+                DownloadTrace?.Invoke("Getting file size...");
+                WebRequest webRequest = WebRequest.Create(uri);
+                webRequest.Method = "HEAD";
+                Stopwatch watch = new Stopwatch();
+                DownloadMetric m = new DownloadMetric();
+                long? bytes;
+                watch.Start();
+                using (WebResponse webResponse = webRequest.GetResponse())
+                {
+                    bytes = long.Parse(webResponse.Headers.Get("Content-Length"));
+                    DownloadTrace?.Invoke($"File size: {bytes.Value.HumanizeBytes(2)}");
+                    m.TotalBytes = bytes.Value;
+                    m.ElapsedTime = watch.Elapsed;
+                    
+                }
+                /*__________________________________________________________________________________
+                  |                                                                                |
+                  |  .NET runtime has a 2GB size limit for objects.                                |
+                  |  ----------------------------------------------                                |
+                  |  To adhere to this restriction, this module ONLY allows downloading files      |
+                  |  less than 1GB. If the file is greater than 1GB, call DownloadToFile method    |
+                  |  instead which downloads the file directly to disk or allow this application   |
+                  |  to automatically save the file to disk for you.                               |
+                  |  ----------------------------------------------                                |
+                  |  1 GB = 1,000,000,000 (1 Billion Bytes).                                       |
+                  |                                                                                |
+                 *|________________________________________________________________________________|*/
+                if (bytes == null)
+                    bytes = _maxDowloadSize;
+                else
+                {
+                    if (bytes.Value > _maxDowloadSize)
+                        bytes = _maxDowloadSize;
+                }
+                #endregion
+
+                #region Read Content Stream Asynchronously
+                long? l = bytes;
+                DownloadTrace?.Invoke("Download about to begin.");
+                DownloadTrace.Invoke("On your marks...");
+                HttpWebRequest req = WebRequest.Create(uri) as HttpWebRequest;
+                req.Method = "GET";
+                req.AddRange(0, bytes.Value);
+                vs = await Task.Run(async () =>
+                {
+                    // Check if operation is already canceled?
+                    ct.ThrowIfCancellationRequested();
+                    
+                    using (StreamReader sr = new StreamReader((await req.GetResponseAsync()).GetResponseStream()))
+                    {
+                        DownloadTrace.Invoke("Download started!");
+                        OnDownloadStart?.Invoke(m);
+                        var a = FromReaderToStream(sr, output, ref m, ref watch, ref l, ct);
+                        DownloadCompleted?.Invoke(m, null);
+                        return a;
+                    }
+                }, ct);
+                #endregion
+            }
+            catch (OperationCanceledException)
+            {
+                string msg = "Download cancelled by user";
+                DownloadTrace.Invoke(msg);
+                OnError?.Invoke(new DownloadClientException(msg));
+            }
+            catch (Exception ex)
+            {
+                string msg = "An unexpected error occured.";
+                DownloadTrace?.Invoke(msg);
+                OnError?.Invoke(new DownloadClientException($"{msg}\n\nDownload failed. See inner exception for details.", ex));
+            }
+            return vs;
+        }
 
         internal async Task<byte[]> ReadHttpResponseStreamAsync(HttpResponseMessage httpResponse, long? length, CancellationToken ct, bool saveToFile=false, string filename=null, string folderPath=null)
         {
@@ -203,11 +294,11 @@ namespace Neon.Downloader
                 }
             }, ct);
         }
-
         internal byte[] FromReaderToStream(StreamReader sr, Stream destinationStream,
             ref DownloadMetric metric, ref Stopwatch stopwatch, ref long? length, CancellationToken ct)
         {
-            int kb = metric.Speed > Globals.PageSize ? (int)metric.Speed : Globals.PageSize;
+            //int kb = metric.Speed > Globals.PageSize ? (int)metric.Speed : Globals.PageSize;
+            int kb = 1024*20;
             int toDownload = kb;
             var buffer = new byte[toDownload];
             int bytesRead;
@@ -239,10 +330,12 @@ namespace Neon.Downloader
                 buffer = new byte[toDownload];
             }
             stopwatch.Stop();
-            DownloadCompleted?.Invoke(metric, destinationStream);
-            stopwatch.Reset();
-            
-            if(destinationStream is MemoryStream) {
+            DownloadTrace.Invoke("Download finished!");
+            DownloadTrace.Invoke("Returning results...");
+            //DownloadCompleted?.Invoke(metric, destinationStream);
+            //stopwatch.Reset();
+
+            if (destinationStream is MemoryStream) {
                 return ((MemoryStream)destinationStream).ToArray();
             }
             else {
@@ -252,7 +345,6 @@ namespace Neon.Downloader
                 return null;
             }
         }
-
         internal string ToRelativeFilePath(Uri uri, string filename = null, string folderPath = null)
         {
             string path;
@@ -307,10 +399,29 @@ namespace Neon.Downloader
 
             return path;
         }
-
         public string GetFileNameFrom(string url) => GetFileNameFrom(new Uri(url));
         public string GetFileNameFrom(Uri uri) => Helpers.Extensions.GetFileNameFrom(uri);
         public FileType GetFileTypeFrom(string url) => GetFileTypeFrom(new Uri(url));
         public FileType GetFileTypeFrom(Uri uri) => Helpers.Extensions.GetFileTypeFrom(uri);
+    }
+    public class DownloadResult
+    {
+        public long Size { get; set; }
+        public String FilePath { get; set; }
+        public TimeSpan TimeTaken { get; set; }
+        public int ParallelDownloads { get; set; }
+    }
+    internal class Range
+    {
+        public Range()
+        { }
+        public Range(long start, long end) :this()
+        {
+            Start = start;
+            End = end;
+        }
+        public long Start { get; set; }
+        public long End { get; set; }
+        public long Length => End - Start;
     }
 }

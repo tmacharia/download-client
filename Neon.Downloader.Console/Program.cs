@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 
 namespace Neon.Downloader.Console
 {
@@ -24,7 +25,7 @@ namespace Neon.Downloader.Console
 
         private async static void Start(string url)
         {
-            await _downloader.DownloadToFileAsync(url,"homeboyz.mp3", @"F:\downloads");
+            await _downloader.DownloadToFileAsync(url, @"F:\downloads", "homeboyz.mp3", CancellationToken.None);
             string x = null;
         }
         private static void _downloader_OnError(Exception ex)
