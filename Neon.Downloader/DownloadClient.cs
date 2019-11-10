@@ -130,7 +130,7 @@ namespace Neon.Downloader
             await InternalDownloadAsync(uri, cancellationToken, true, filename, folderPath);
         }
 
-        [Obsolete("Issues encountered working with this method. Please migrate to using 'ProcessDownloadAsync' method which is much efficient & resilient to runtime errors/issues.",false)]
+        [Obsolete("Issues encountered working with this method. Please migrate to using the 'ProcessDownloadAsync' method which is much efficient & resilient to runtime errors/issues.",false)]
         internal async Task<byte[]> InternalDownloadAsync(Uri uri, CancellationToken cancellationToken, bool saveToDisk=false, string filename=null, string folderPath=null)
         {
             byte[] vs = Array.Empty<byte>();
