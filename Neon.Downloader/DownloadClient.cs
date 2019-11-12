@@ -298,7 +298,7 @@ namespace Neon.Downloader
             ref DownloadMetric metric, ref Stopwatch stopwatch, ref long? length, CancellationToken ct)
         {
             //int kb = metric.Speed > Globals.PageSize ? (int)metric.Speed : Globals.PageSize;
-            int kb = 1024*20;
+            int kb = 1024*65;
             int toDownload = kb;
             var buffer = new byte[toDownload];
             int bytesRead;
