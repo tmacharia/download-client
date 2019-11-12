@@ -130,7 +130,7 @@ namespace Neon.Downloader
             await InternalDownloadAsync(uri, cancellationToken, true, filename, folderPath);
         }
 
-        [Obsolete("Issues encountered working with this method. Please migrate to using 'ProcessDownloadAsync' method which is much efficient & resilient to runtime errors/issues.",false)]
+        [Obsolete("Issues encountered working with this method. Please migrate to using the 'ProcessDownloadAsync' method which is much efficient & resilient to runtime errors/issues.",false)]
         internal async Task<byte[]> InternalDownloadAsync(Uri uri, CancellationToken cancellationToken, bool saveToDisk=false, string filename=null, string folderPath=null)
         {
             byte[] vs = Array.Empty<byte>();
@@ -298,7 +298,7 @@ namespace Neon.Downloader
             ref DownloadMetric metric, ref Stopwatch stopwatch, ref long? length, CancellationToken ct)
         {
             //int kb = metric.Speed > Globals.PageSize ? (int)metric.Speed : Globals.PageSize;
-            int kb = 1024*20;
+            int kb = 1024*65;
             int toDownload = kb;
             var buffer = new byte[toDownload];
             int bytesRead;
