@@ -29,7 +29,7 @@ using Neon.Downloader;
 Initialize a new instance of download client where you can optionally set the maximum size per download in the constructor, the default is 1GB.
 
 ```c#
-IDownloader _downloader = new DownloadClient();
+IDownloader _downloader = new DownloaderClient();
 _downloader.DownloadTrace += (string trace) => // trace event logs
 _downloader.OnDownloadStart += (DownloadMetric metric) => // indicates that download has started
 _downloader.DownloadCompleted += (DownloadMetric metric, Stream stream) => // last metric with downloaded stream
